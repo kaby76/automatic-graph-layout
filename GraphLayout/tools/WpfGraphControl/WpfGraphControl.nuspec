@@ -1,8 +1,8 @@
 <package>
   <metadata>
-    <id>AutomaticGraphLayout.WpfGraphControl</id>
+    <id>Domemtech.AutomaticGraphLayout.WpfGraphControl</id>
     <version>1.1.4</version>
-    <authors>paulovila</authors>
+    <authors>kaby76</authors>
     <owners>Microsoft</owners>
     <license type="expression">MIT</license>
     <projectUrl>https://github.com/Microsoft/automatic-graph-layout</projectUrl>
@@ -13,15 +13,15 @@
     <tags>MSAGL Graph Layout</tags>
     <dependencies>
       <group targetFramework=".NETFramework4.7.2" >
-        <dependency id="AutomaticGraphLayout.Drawing" version="$(BuildVersion)" />
+        <dependency id="Domemtech.AutomaticGraphLayout.Drawing" version="1.1.4" />
       </group>
       <group targetFramework=".NETCoreApp3.1" >
-        <dependency id="AutomaticGraphLayout.Drawing" version="$(BuildVersion)" />
+        <dependency id="Domemtech.AutomaticGraphLayout.Drawing" version="1.1.4" />
       </group>
     </dependencies>
   </metadata>
   <files>
-    <file src="./bin/Release/net472/Microsoft.Msagl.WpfGraphControl.dll" target="lib\net472" />
-    <file src="./bin/Release/netcoreapp3.1/Microsoft.Msagl.WpfGraphControl.dll" target="lib\netcoreapp3.1" />
+    <file src="./bin/Release/net472/WpfGraphControl.dll" target="lib\net472" />
+    <file src="./bin/Release/netcoreapp3.1/WpfGraphControl.dll" target="lib\netcoreapp3.1" />
   </files>
 </package>

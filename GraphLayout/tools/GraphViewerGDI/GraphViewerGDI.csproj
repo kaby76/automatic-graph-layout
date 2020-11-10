@@ -3,7 +3,7 @@
     <TargetFrameworks>net472;netcoreapp3.1</TargetFrameworks>
     <OutputType>Library</OutputType>
     <RootNamespace>Microsoft.Msagl.GraphViewerGdi</RootNamespace>
-    <AssemblyName>Microsoft.Msagl.GraphViewerGdi</AssemblyName>
+    <AssemblyName>GraphViewerGdi</AssemblyName>
     <OldToolsVersion>3.5</OldToolsVersion>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>

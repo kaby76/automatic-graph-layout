@@ -1,8 +1,8 @@
 ﻿<package>
   <metadata>
-    <id>AutomaticGraphLayout.Drawing</id>
+    <id>Domemtech.AutomaticGraphLayout.Drawing</id>
     <version>1.1.4</version>
-    <authors>paulovila</authors>
+    <authors>kaby76</authors>
     <owners>Microsoft</owners>
     <licenseUrl>https://github.com/Microsoft/automatic-graph-layout/blob/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/Microsoft/automatic-graph-layout</projectUrl>
@@ -14,10 +14,12 @@
     <language>en-US</language>
     <tags>MSAGL Graph Layout</tags>
     <dependencies>
-      <dependency id="Microsoft.AutomaticGraphLayout" version="$(BuildVersion)" />
+      <dependency id="Domemtech.AutomaticGraphLayout" version="1.1.4" />
     </dependencies>
   </metadata>
   <files>
     <file src="./bin/Release/netstandard2.0/AutomaticGraphLayout.Drawing.dll" target="lib/netstandard2.0" />
+    <file src="./bin/Release/netstandard2.1/AutomaticGraphLayout.Drawing.dll" target="lib/netstandard2.1" />
+    <file src="./bin/Release/netcoreapp3.1/AutomaticGraphLayout.Drawing.dll" target="lib/netcoreapp3.1" />
   </files>
 </package>
