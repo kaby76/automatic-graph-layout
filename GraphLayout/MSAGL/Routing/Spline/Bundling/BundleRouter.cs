@@ -28,8 +28,8 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
         internal const double SuperLoosePaddingCoefficient = 1.1;
 
         readonly SdShortestPath shortestPathRouter;
-        RectangleNode<Polyline> TightHierarchy { get; set; }
-        RectangleNode<Polyline> LooseHierarchy { get; set; }
+        RectangleNode<Polyline, Point> TightHierarchy { get; set; }
+        RectangleNode<Polyline, Point> LooseHierarchy { get; set; }
 
         ///<summary>
         /// reports the status of the bundling
@@ -40,7 +40,7 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
 
         Func<Port, Polyline> loosePolylineOfPort;
     
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
         void CheckGraph() {
             foreach (var e in geometryGraph.Edges) {
                 if (e.Source == e.Target)
@@ -57,8 +57,8 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
 #endif
 
         internal BundleRouter(GeometryGraph geometryGraph, SdShortestPath shortestPathRouter,
-                              VisibilityGraph visibilityGraph, BundlingSettings bundlingSettings, double loosePadding, RectangleNode<Polyline> tightHierarchy,
-                              RectangleNode<Polyline> looseHierarchy,
+                              VisibilityGraph visibilityGraph, BundlingSettings bundlingSettings, double loosePadding, RectangleNode<Polyline, Point> tightHierarchy,
+                              RectangleNode<Polyline, Point> looseHierarchy,
                               Dictionary<EdgeGeometry, Set<Polyline>> edgeLooseEnterable, Dictionary<EdgeGeometry, Set<Polyline>> edgeTightEnterable, Func<Port, Polyline> loosePolylineOfPort) {
             ValidateArg.IsNotNull(geometryGraph, "geometryGraph");
             ValidateArg.IsNotNull(bundlingSettings, "bundlingSettings");
@@ -76,7 +76,7 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
             this.loosePolylineOfPort = loosePolylineOfPort;
         }
 
-        bool ThereAreOverlaps(RectangleNode<Polyline> hierarchy) {
+        bool ThereAreOverlaps(RectangleNode<Polyline, Point> hierarchy) {
             return RectangleNodeUtils.FindIntersectionWithProperty(hierarchy, hierarchy, Curve.CurvesIntersect);
         }
 
@@ -140,10 +140,10 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
             }
         }
 
-        static internal Cdt CreateConstrainedDelaunayTriangulation(RectangleNode<Polyline> looseHierarchy) {
+        static internal Cdt CreateConstrainedDelaunayTriangulation(RectangleNode<Polyline, Point> looseHierarchy) {
             IEnumerable<Polyline> obstacles = looseHierarchy.GetAllLeaves();
 
-            Rectangle rectangle = looseHierarchy.Rectangle;
+            Rectangle rectangle = (Rectangle)looseHierarchy.Rectangle;
             double d = rectangle.Diagonal / 4;
             Point lb = rectangle.LeftBottom + new Point(-d, -d);
             Point lt = rectangle.LeftTop + new Point(-d, d);
@@ -161,7 +161,7 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
             constrainedDelaunayTriangulation.Run();
             return constrainedDelaunayTriangulation;
         }
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         // ReSharper disable UnusedMember.Local
         void ShowGraphLocal() {
@@ -334,8 +334,8 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
             foreach (var edge in geometryGraph.Edges)
                 Arrowheads.TrimSplineAndCalculateArrowheads(edge.EdgeGeometry,
                                                                  edge.Source.BoundaryCurve,
-                                                                 edge.Target.BoundaryCurve, 
-                                                                 edge.Curve, false, this.bundlingSettings.KeepOriginalSpline);
+                                                                 edge.Target.BoundaryCurve,
+                                                                 edge.Curve, false);
         }
     }
 }

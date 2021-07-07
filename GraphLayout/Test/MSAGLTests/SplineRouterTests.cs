@@ -190,11 +190,11 @@ namespace Microsoft.Msagl.UnitTests
             sw.Stop();
             TestContext.WriteLine("Edge routing took: {0} seconds.", sw.ElapsedMilliseconds / 1000.0);
         }
-        
+        [Ignore]
         [TestMethod]
         [Description("the run does not stop")]
         public void BundlingBug1GeomGraph() {
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
             DisplayGeometryGraph.SetShowFunctions();
 #endif
             var graph = GeometryGraphReader.CreateFromFile(GetGeomGraphFileName("bug1.msagl.geom"));

@@ -18,7 +18,7 @@ namespace Microsoft.Msagl.Layout.Incremental {
     /// Note that in debug mode lots of numerical checking is applied, which slows things down considerably.  So, run in Release mode unless you're actually debugging!
     /// </summary>
     public class FastIncrementalLayout : AlgorithmBase {
-        readonly BasicGraph<FiEdge> basicGraph;
+        readonly BasicGraphOnEdges<FiEdge> basicGraph;
         readonly List<FiNode[]> components;
         internal readonly Dictionary<int, List<IConstraint>> constraints = new Dictionary<int, List<IConstraint>>();
         readonly List<FiEdge> edges = new List<FiEdge>();
@@ -84,7 +84,7 @@ namespace Microsoft.Msagl.Layout.Incremental {
             SetLockNodeWeights();
             components = new List<FiNode[]>();
             if (!settings.InterComponentForces) {
-                basicGraph = new BasicGraph<FiEdge>(edges, nodes.Length);
+                basicGraph = new BasicGraphOnEdges<FiEdge>(edges, nodes.Length);
                 foreach (var componentNodes in ConnectedComponentCalculator<FiEdge>.GetComponents(basicGraph)) {
                     var vs = new FiNode[componentNodes.Count()];
                     int vi = 0;
@@ -216,19 +216,6 @@ namespace Microsoft.Msagl.Layout.Incremental {
                    f = settings.AttractiveForceConstant*(l - d)/d2;
             e.source.force += f*duv;
             e.target.force -= f*duv;
-        }
-
-        static void CalculateMultiPorts(FiEdge e) {
-            var sourceLocation = e.source.Center;
-            var targetLocation = e.target.Center;
-            var sourceMultiPort = e.mEdge.SourcePort as MultiLocationFloatingPort;
-            if (sourceMultiPort != null) {
-                sourceMultiPort.SetClosestLocation(targetLocation);
-            }
-            var targetMultiPort = e.mEdge.TargetPort as MultiLocationFloatingPort;
-            if (targetMultiPort != null) {
-                targetMultiPort.SetClosestLocation(sourceLocation);
-            }
         }
 
         void AddSpringForces(FiEdge e) {
@@ -586,10 +573,7 @@ namespace Microsoft.Msagl.Layout.Incremental {
                 progress = 0;
             }
             this.StartListenToLocalProgress(settings.MinorIterations);
-            for (int i = 0; i < settings.MinorIterations; ++i) {
-                if (settings.RespectEdgePorts) {
-                    edges.ForEach(CalculateMultiPorts);
-                }
+            for (int i = 0; i < settings.MinorIterations; ++i) {                
                 double d2 = settings.RungeKuttaIntegration ? RungeKuttaIntegration() : VerletIntegration();
 
                 if (d2 < settings.DisplacementThreshold || settings.Iterations > settings.MaxIterations) {

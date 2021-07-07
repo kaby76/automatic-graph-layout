@@ -58,6 +58,12 @@ namespace Microsoft.Msagl.Core.GraphAlgorithms {
 
             throw new InvalidOperationException();
         }
+        public override bool Equals(object obj) {
+            if (!(obj is IntPair)) {
+                return false;
+            }
+            return (IntPair)obj == this;
+        }
         /// <summary>
         /// the greater operator
         /// </summary>
@@ -67,6 +73,14 @@ namespace Microsoft.Msagl.Core.GraphAlgorithms {
         public static bool operator >(IntPair pair0, IntPair pair1) {
             return pair1 < pair0;
         }
+        public static bool operator==(IntPair pair0, IntPair pair1) {
+            return pair1.x == pair0.x && pair1.y == pair0.y;
+        }
+        public static bool operator !=(IntPair pair0, IntPair pair1) {
+            return pair1.x != pair0.x || pair1.y != pair0.y;
+        }
+
+
         /// <summary>
         /// Compares two pairs
         /// </summary>
@@ -74,26 +88,9 @@ namespace Microsoft.Msagl.Core.GraphAlgorithms {
         /// <param name="pair1"></param>
         /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811")]
-        public static int Compare(IntPair pair0, IntPair pair1) {
-            if (pair0 < pair1)
-                return 1;
-            if (pair0 == pair1)
-                return 0;
-
-            return -1;
-        }
-
-        /// <summary>
-        /// override the equality
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
-        public override bool Equals(object obj) {
-            IntPair other = obj as IntPair;
-            if (other == null)
-                return false;
-
-            return x == other.x && y == other.y;
+        public int CompareTo(IntPair other) {
+            var r = x.CompareTo(other.x);
+            return r != 0 ? r : y.CompareTo(other.y);            
         }
 
 #if SHARPKIT //https://code.google.com/p/sharpkit/issues/detail?id=289 Support Dictionary directly based on object's GetHashCode

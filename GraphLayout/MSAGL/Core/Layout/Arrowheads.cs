@@ -6,8 +6,7 @@ using System.Linq;
 using Microsoft.Msagl.Core.Geometry;
 using Microsoft.Msagl.Core.Geometry.Curves;
 
-namespace Microsoft.Msagl.Core.Layout
-{
+namespace Microsoft.Msagl.Core.Layout {
     /// <summary>
     /// Arrowhead calculations
     /// </summary>
@@ -32,9 +31,9 @@ namespace Microsoft.Msagl.Core.Layout
             if (c == null)
                 return false;
             if (edgeGeometry.SourceArrowhead != null)
-                edgeGeometry.SourceArrowhead.TipPosition = PlaceTip(c.Start, edgeGeometry.Curve.Start, edgeGeometry.SourceArrowhead.Offset);
+                edgeGeometry.SourceArrowhead.TipPosition = edgeGeometry.Curve.Start;
             if (edgeGeometry.TargetArrowhead != null)
-                edgeGeometry.TargetArrowhead.TipPosition = PlaceTip(c.End, edgeGeometry.Curve.End, edgeGeometry.TargetArrowhead.Offset);
+                edgeGeometry.TargetArrowhead.TipPosition = edgeGeometry.Curve.End;
             edgeGeometry.Curve = c;
             return true;
         }
@@ -102,18 +101,6 @@ namespace Microsoft.Msagl.Core.Layout
         }
 
 
-        internal static Point PlaceTip(Point arrowBase, Point arrowTip, double offset)
-        {
-            if (Math.Abs(offset) < ApproximateComparer.Tolerance)
-                return arrowTip;
-
-            var d=arrowBase - arrowTip;            
-            var dLen=d.Length;
-            if(dLen<ApproximateComparer.Tolerance)
-                return arrowTip;
-            return arrowTip + offset * (d / dLen);
-        }
-
         /// <summary>
         /// trim the edge curve with the node boundaries
         /// </summary>
@@ -129,7 +116,7 @@ namespace Microsoft.Msagl.Core.Layout
                                                     edge.Source.BoundaryCurve,
                                                     edge.Target.BoundaryCurve,
                                                     spline,
-                                                    narrowestInterval, keepOriginalSpline);
+                                                    narrowestInterval);
         }
 
         /// <summary>
@@ -146,8 +133,7 @@ namespace Microsoft.Msagl.Core.Layout
                                                             ICurve sourceBoundary,
                                                             ICurve targetBoundary,
                                                             ICurve spline,
-                                                            bool narrowestInterval,
-                                                            bool keepOriginalSpline) {
+                                                            bool narrowestInterval) {
             ValidateArg.IsNotNull(spline, "spline");
             ValidateArg.IsNotNull(edgeGeometry, "edgeGeometry");
             
@@ -244,7 +230,7 @@ namespace Microsoft.Msagl.Core.Layout
                 CubicBezierSegment seg = Curve.CreateBezierSeg(a, b, perp, i);
                 if (TrimSplineAndCalculateArrowheads(edge.EdgeGeometry, edge.Source.BoundaryCurve,
                                                      edge.Target.BoundaryCurve,
-                                                     seg, false, false))
+                                                     seg, false))
                 {
                     break;
                 }

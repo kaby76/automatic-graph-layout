@@ -89,12 +89,8 @@
     <Compile Include="Infrastructure\Rectilinear\SuperClump.cs" />
     <Compile Include="Infrastructure\Rectilinear\SuperClumpMap.cs" />
     <Compile Include="Infrastructure\Rectilinear\EdgeGeometryOrderer.cs" />
-    <Compile Include="Infrastructure\Rectilinear\GeomFileProcessor.cs" />
-    <Compile Include="Infrastructure\Rectilinear\RectFileProcessor.cs" />
     <Compile Include="Infrastructure\Rectilinear\RectFileStrings.cs" />
     <Compile Include="Infrastructure\Rectilinear\RectilinearEdgeRouterWrapper.cs" />
-    <Compile Include="Infrastructure\Rectilinear\RectFileReader.cs" />
-    <Compile Include="Infrastructure\Rectilinear\RectFileWriter.cs" />
     <Compile Include="Infrastructure\Rectilinear\RectilinearVerifier.cs" />
     <Compile Include="Infrastructure\Rectilinear\SegmentOrderer.cs" />
     <Compile Include="Infrastructure\Rectilinear\TestPointComparer.cs" />
@@ -125,6 +121,7 @@
     <Compile Include="Layout\Layered\SugiyamaEdgeLabelTests.cs" />
     <Compile Include="Layout\Layered\SugiyamaSettingsTests.cs" />
     <Compile Include="EdgeLabelPlacementTest.cs" />
+    <Compile Include="NetworkSimplexTest.cs" />
     <Compile Include="RandomBundlingTests.cs" />
     <Compile Include="RectanglePackingTest.cs" />
     <Compile Include="SplineRouterTests.cs" />
@@ -139,17 +136,14 @@
     <Compile Include="Constraints\ProjectionSolverFileTests.cs" />
     <Compile Include="Constraints\ProjectionSolverTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Rectilinear\RectilinearFileTests.cs" />
     <Compile Include="Rectilinear\RectilinearTests.cs" />
     <Compile Include="RTreeTest.cs" />
     <Compile Include="Layout\Layered\SugiyamaConstraintTests.cs" />
     <Compile Include="Layout\Layered\SugiyamaLayoutTests.cs" />
+    <Compile Include="GenericBinaryHeapPriorityQueue.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\MsaglGeometryGraphs\graph0.msagl.geom">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Resources\polys">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Resources\Constraints\OverlapRemoval\Data\*.txt">
@@ -168,9 +162,6 @@
     <None Include="Resources\MsaglGeometryGraphs\RoutingRegressionBug20110127.msagl.geom">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Resources\polygons">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="Resources\Rectilinear\Data\*.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -184,9 +175,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Resources\MsaglGeometryGraphs\*.msagl.geom">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Resources\triangles">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

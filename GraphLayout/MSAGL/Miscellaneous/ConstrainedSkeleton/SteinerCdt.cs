@@ -26,7 +26,7 @@ namespace Microsoft.Msagl.Miscellaneous.ConstrainedSkeleton
         public VisibilityGraph _visGraph;
         readonly IEnumerable<LgNodeInfo> _nodeInfos;
         Rectangle _boundingBox;
-        readonly Random _random = new Random();
+        readonly Random _random = new Random(3);
         public SteinerCdt(VisibilityGraph visGraph, IEnumerable<LgNodeInfo> nodeInfos)
         {
             _visGraph = visGraph;
@@ -234,7 +234,7 @@ namespace Microsoft.Msagl.Miscellaneous.ConstrainedSkeleton
             }
 
             var tree =
-                new RTree<Point>(_pointsToIndices.Keys.Select(p => new KeyValuePair<Rectangle, Point>(new Rectangle(p), p)));
+                new RTree<Point,Point>(_pointsToIndices.Keys.Select(p => new KeyValuePair<IRectangle<Point>, Point>(new Rectangle(p), p)));
             var badSegs = (from e in _segments let overlaps = GetPointsOverlappingSeg(e, tree, indexToPoints) where overlaps.Count > 2 select e).ToList();
 
 #if TEST_MSAGL
@@ -261,7 +261,7 @@ namespace Microsoft.Msagl.Miscellaneous.ConstrainedSkeleton
         }
 #endif
 
-        List<Point> GetPointsOverlappingSeg(SymmetricTuple<int> seg, RTree<Point> tree, Point[] indexToPoints)
+        List<Point> GetPointsOverlappingSeg(SymmetricTuple<int> seg, RTree<Point, Point> tree, Point[] indexToPoints)
         {
             Point p0 = indexToPoints[seg.A];
             Point p1 = indexToPoints[seg.B];

@@ -28,8 +28,7 @@ namespace Microsoft.Msagl.Layout.MDS
 
         bool removeOverlaps = true;
 
-        OverlapRemovalMethod overlapMethod = OverlapRemovalMethod.MinimalSpanningTree;
-
+        
         /// <summary>
         /// 
         /// </summary>
@@ -138,7 +137,7 @@ namespace Microsoft.Msagl.Layout.MDS
         /// <summary>
         /// Settings for calculation of ideal edge length
         /// </summary>
-        public IdealEdgeLengthSettings IdealEdgeLength { get; set; }
+        public EdgeConstraints EdgeConstraints { get; set; }
 
         /// <summary>
         /// Adjust the scale of the graph if there is not enough whitespace between nodes
@@ -146,14 +145,7 @@ namespace Microsoft.Msagl.Layout.MDS
         public bool AdjustScale { get; set; }
 
 
-        /// <summary>
-        /// The method which should be used to remove the overlaps.
-        /// </summary>
-        public OverlapRemovalMethod OverlapRemovalMethod {
-            get { return overlapMethod; }
-            set { overlapMethod = value; }
-        }
-
+        
         public int GetNumberOfIterationsWithMajorization(int nodeCount) {
             if (nodeCount > CallIterationsWithMajorizationThreshold) {
                 return 0;

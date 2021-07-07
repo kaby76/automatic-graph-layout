@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Msagl.Core;
 using Microsoft.Msagl.Core.DataStructures;
 using Microsoft.Msagl.Core.GraphAlgorithms;
@@ -13,19 +14,19 @@ namespace Microsoft.Msagl.Layout.Layered {
     /// </summary>
     internal class NetworkSimplex : AlgorithmBase, LayerCalculator {
 
-        static BasicGraph<IntEdge> CreateGraphWithIEEdges(BasicGraph<IntEdge> bg) {
-            List<IntEdge> ieEdges = new List<IntEdge>();
+        static BasicGraphOnEdges<PolyIntEdge> CreateGraphWithIEEdges(BasicGraphOnEdges<PolyIntEdge> bg) {
+            List<PolyIntEdge> ieEdges = new List<PolyIntEdge>();
 
-            foreach (IntEdge e in bg.Edges)
+            foreach (PolyIntEdge e in bg.Edges)
                 ieEdges.Add(new NetworkEdge(e));
 
-            return new BasicGraph<IntEdge>(ieEdges, bg.NodeCount);
+            return new BasicGraphOnEdges<PolyIntEdge>(ieEdges, bg.NodeCount);
         }
 
         int[] layers;
 
 
-        internal NetworkSimplex(BasicGraph<IntEdge> graph, CancelToken cancelToken)
+        internal NetworkSimplex(BasicGraphOnEdges<PolyIntEdge> graph, CancelToken cancelToken)
         {
             this.graph = CreateGraphWithIEEdges(graph);
             inTree = new bool[graph.NodeCount];
@@ -57,11 +58,11 @@ namespace Microsoft.Msagl.Layout.Layered {
         /// The function FeasibleTree constructs an initial feasible spanning tree.
         /// </summary>
         void FeasibleTree() {
-            InitLayer();
+            InitLayers();
 
             while (TightTree() < this.graph.NodeCount) {
 
-                IntEdge e = GetNonTreeEdgeIncidentToTheTreeWithMinimalAmountOfSlack();
+                PolyIntEdge e = GetNonTreeEdgeIncidentToTheTreeWithMinimalAmountOfSlack();
                 if (e == null)
                     break; //all edges are tree edges
                 int slack = Slack(e);
@@ -278,17 +279,14 @@ namespace Microsoft.Msagl.Layout.Layered {
             low = new int[graph.NodeCount];
             parent = new NetworkEdge[graph.NodeCount];
 
-            int curLim = 1;
-            int v = 0;
-
-            InitLowLimParentAndLeavesOnSubtree(ref curLim, ref v);
+            InitLowLimParentAndLeavesOnSubtree(1, 0);
         }
         /// <summary>
         /// initializes lim and low in the subtree 
         /// </summary>
         /// <param name="curLim">the root of the subtree</param>
         /// <param name="v">the low[v]</param>
-        private void InitLowLimParentAndLeavesOnSubtree(ref int curLim, ref int v) {
+        private void InitLowLimParentAndLeavesOnSubtree(int curLim, int v) {
             Stack<StackStruct> stack = new Stack<StackStruct>();
             IEnumerator outEnum = this.graph.OutEdges(v).GetEnumerator();
             IEnumerator inEnum = this.graph.InEdges(v).GetEnumerator();
@@ -369,12 +367,11 @@ namespace Microsoft.Msagl.Layout.Layered {
 
             }
 
-            int v = l;
-            InitLowLimParentAndLeavesOnSubtree(ref llow, ref v);
+            InitLowLimParentAndLeavesOnSubtree(llow, l);
 
         }
 
-        int Slack(IntEdge e) {
+        int Slack(PolyIntEdge e) {
             int ret = layers[e.Source] - layers[e.Target] - e.Separation;
 #if DEBUGNW
       if (ret < 0)
@@ -388,7 +385,7 @@ namespace Microsoft.Msagl.Layout.Layered {
         /// </summary>
         /// <returns></returns>
         NetworkEdge GetNonTreeEdgeIncidentToTheTreeWithMinimalAmountOfSlack() {
-            IntEdge eret = null;
+            PolyIntEdge eret = null;
             int minSlack = NetworkEdge.Infinity;
 
             foreach (int v in this.treeVertices) {
@@ -627,15 +624,13 @@ namespace Microsoft.Msagl.Layout.Layered {
                         continue; //the value of this cut has not been changed
                     int cut = 0;
                     foreach (NetworkEdge ce in IncidentEdges(w)) {
-
                         if (ce.inTree == false) {
-                            int e0Val = EdgeSourceTargetVal(ce, cutEdge);
-                            if (e0Val != 0)
-                                cut += e0Val * ce.Weight;
-                        } else //e0 is a tree edge
-                        {
-                            if (ce == cutEdge)
+                            cut += EdgeSourceTargetVal(ce, cutEdge) * ce.Weight;
+                        }
+                        else { //e0 is a tree edge
+                            if (ce == cutEdge) {
                                 cut += ce.Weight;
+                            }
                             else {
                                 int impact = cutEdge.Source == ce.Target || cutEdge.Target == ce.Source ? 1 : -1;
                                 int edgeContribution = EdgeContribution(ce, w);
@@ -655,7 +650,6 @@ namespace Microsoft.Msagl.Layout.Layered {
                 front = newFront;
                 newFront = t;
             }
-
         }
 
         private void CreatePathForCutUpdates(NetworkEdge e, NetworkEdge f, int l) {
@@ -723,7 +717,7 @@ namespace Microsoft.Msagl.Layout.Layered {
         }
 #endif
 
-        void InitLayer() {
+        void InitLayers() {
             LongestPathLayering lp = new LongestPathLayering(this.graph);
             this.layers = lp.GetLayers();
         }
@@ -817,25 +811,27 @@ namespace Microsoft.Msagl.Layout.Layered {
         #endregion
 
   
-        BasicGraph<IntEdge> graph;
+        BasicGraphOnEdges<PolyIntEdge> graph;
         private CancelToken NetworkCancelToken;
 
+        public int Weight { get {
+                return this.graph.Edges.Select(e => e.Weight*(this.layers[e.Source]-this.layers[e.Target])).Sum();
+            }
+        }
 
-        protected override void RunInternal()
-        {
+        protected override void RunInternal() {
             if (graph.Edges.Count == 0 && graph.NodeCount == 0)
-                layers=new int[0];
+                layers = new int[0];
 
             FeasibleTree();
 
             Tuple<NetworkEdge, NetworkEdge> leaveEnter;
-            while ((leaveEnter = LeaveEnterEdge()) != null)
-            {
+            while ((leaveEnter = LeaveEnterEdge()) != null) {
                 ProgressStep();
                 Exchange(leaveEnter.Item1, leaveEnter.Item2);
             }
 
-            ShiftLayerToZero();    
+            ShiftLayerToZero();
         }
     }
 }

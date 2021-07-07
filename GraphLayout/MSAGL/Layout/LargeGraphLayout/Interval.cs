@@ -1,10 +1,11 @@
-﻿using Microsoft.Msagl.Core.Geometry;
+﻿using System;
+using Microsoft.Msagl.Core.Geometry;
 
 namespace Microsoft.Msagl.Layout.LargeGraphLayout {
     /// <summary>
     /// represents a range of doubles
     /// </summary>
-    public class Interval {
+    public class Interval:IRectangle<double> {
         /// <summary>
         /// constructor
         /// </summary>
@@ -53,8 +54,7 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout {
         /// <summary>
         /// the length
         /// </summary>
-        public double Length { get { return End - Start; } }
-
+        public double Area { get { return End - Start; } }
         /// <summary>
         /// return true if the value is inside the range
         /// </summary>
@@ -83,6 +83,35 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout {
                 return false;
 
             return !(other.End < Start - ApproximateComparer.DistanceEpsilon);
+        }
+
+        public bool Contains(IRectangle<double> rect) {
+            var r = (Interval)rect;
+            return this.Contains(r);
+        }
+
+        public IRectangle<double> Intersection(IRectangle<double> rectangle) {
+            var r = (Interval)rectangle;
+            return new Interval(Math.Max(Start, r.Start), Math.Min(End, r.End));
+        }
+
+        public bool Intersects(IRectangle<double> rectangle) {
+            var r = (Interval)rectangle;
+            return this.Intersects(r);
+        }
+
+        public void Add(IRectangle<double> rectangle) {
+            var r = (Interval)rectangle;
+            Add(r.Start);
+            Add(r.End);
+        }
+
+        public bool Contains(double p, double radius) {
+            return Contains(p - radius) && Contains(p + radius);
+        }
+
+        public IRectangle<double> Unite(IRectangle<double> rectangle) {
+            return new Interval(this, (Interval)rectangle);
         }
     }
 }

@@ -364,9 +364,7 @@ namespace Microsoft.Msagl.Core.Geometry {
         public Point Rotate(double angle) {
             double c = Math.Cos(angle);
             double s = Math.Sin(angle);
-
             return new Point(c * X - s * Y, s * X + c * Y);
-
         }
 
         /// <summary>
@@ -520,24 +518,7 @@ namespace Microsoft.Msagl.Core.Geometry {
         }
 
 
-        /// <summary>
-        /// figures out the triangle on the plane orientation: positive- counterclockwise, negative - clockwise
-        /// </summary>
-        /// <param name="cornerA"></param>
-        /// <param name="cornerB"></param>
-        /// <param name="cornerC"></param>
-        /// <returns></returns>
-        static public TriangleOrientation GetTriangleOrientationWithNoEpsilon(Point cornerA, Point cornerB, Point cornerC)
-        {
-            var area = Point.SignedDoubledTriangleArea(cornerA, cornerB, cornerC);
-            if (area > 0)
-                return TriangleOrientation.Counterclockwise;
-            if (area < 0)
-                return TriangleOrientation.Clockwise;
-            return TriangleOrientation.Collinear;
-        }
-
-
+      
         /// <summary>
         /// returns true if an orthogonal projection of point on [segmentStart,segmentEnd] exists
         /// </summary>
@@ -605,14 +586,14 @@ namespace Microsoft.Msagl.Core.Geometry {
         /// The closest point on the segment [segmentStart,segmentEnd] to "point". 
         /// See the drawing DistToLineSegment.gif.
         /// </summary>
-        /// <param name="point"></param>
-        /// <param name="segmentStart"></param>
-        /// <param name="segmentEnd"></param>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="c"></param>
         /// <param name="parameter">the parameter of the closest point</param>
         /// <returns></returns>
-        static internal double DistToLineSegment(Point point, Point segmentStart, Point segmentEnd, out double parameter) {
-            Point bc = segmentEnd - segmentStart;
-            Point ba = point - segmentStart;
+        static internal double DistToLineSegment(Point a, Point b, Point c, out double parameter) {
+            Point bc = c - b;
+            Point ba = a - b;
             double c1, c2;
             if ((c1 = bc * ba) <= 0.0 + ApproximateComparer.Tolerance) {
                 parameter = 0;
@@ -620,7 +601,7 @@ namespace Microsoft.Msagl.Core.Geometry {
             }
             if ((c2 = bc * bc) <= c1 + ApproximateComparer.Tolerance) {
                 parameter = 1;
-                return (point - segmentEnd).Length;
+                return (a - c).Length;
             }
             parameter = c1 / c2;
             return (ba - parameter * bc).Length;
@@ -777,7 +758,7 @@ namespace Microsoft.Msagl.Core.Geometry {
         /// <summary>
         /// 
         /// </summary>
-        internal Directions CompassDirection {
+        internal Direction CompassDirection {
             get { return CompassVector.VectorDirection(this); }
         }
         /// <summary>

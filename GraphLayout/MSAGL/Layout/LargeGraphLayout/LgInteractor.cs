@@ -1,8 +1,6 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Msagl.Core;
@@ -24,7 +22,6 @@ using Microsoft.Msagl.Layout.OverlapRemovalFixedSegments;
 using Microsoft.Msagl.Miscellaneous;
 using Microsoft.Msagl.Miscellaneous.ConstrainedSkeleton;
 using Microsoft.Msagl.Miscellaneous.RegularGrid;
-using Microsoft.Msagl.Miscellaneous.Routing;
 using Microsoft.Msagl.Routing.Visibility;
 using Edge = Microsoft.Msagl.Core.Layout.Edge;
 using LineSegment = Microsoft.Msagl.Core.Geometry.Curves.LineSegment;
@@ -33,11 +30,9 @@ using Rectangle = Microsoft.Msagl.Core.Geometry.Rectangle;
 using Size = Microsoft.Msagl.Core.DataStructures.Size;
 using SymmetricSegment = Microsoft.Msagl.Core.DataStructures.SymmetricTuple<Microsoft.Msagl.Core.Geometry.Point>;
 #if TEST_MSAGL
-using Timer = Microsoft.Msagl.DebugHelpers.Timer;
 #endif
 
-namespace Microsoft.Msagl.Layout.LargeGraphLayout
-{
+namespace Microsoft.Msagl.Layout.LargeGraphLayout {
     /// <summary>
     ///     enables to interactively explore a large graph
     /// </summary>
@@ -390,21 +385,6 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
                     }
                 }
             }
-        }
-
-        public bool PromptUserforGraphSize()
-        {
-            Console.WriteLine();
-            Console.WriteLine("Loading a huge graph? (Y/N)");
-            string input = Console.ReadLine();
-            return (input.StartsWith("Y") || input.StartsWith("y"));            
-        }
-        public bool PromptUserforFlow()
-        {
-            Console.WriteLine();
-            Console.WriteLine("Use Flow to assign nodes on layers? (Y/N)");
-            string input = Console.ReadLine();
-            return (input.StartsWith("Y") || input.StartsWith("y"));            
         }
 
         void SetControlVariables()
@@ -962,7 +942,7 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
             buildTiles(0, 0, maxX, maxY, 0, 0, 0);
 
             int count = 0;
-            RTree<int> TreeOfNodes = new RTree<int>();
+            RTree<int,Point> TreeOfNodes = new RTree<int,Point>();
             for (int index = 0; index < g.N; index++)
             {
                 TreeOfNodes.Add(new Rectangle(new Point(g.VList[index].XLoc, g.VList[index].YLoc)), index);
@@ -1658,7 +1638,7 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
             _railGraph = new RailGraph();
     
 #if TEST_GRAPHMAPS
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
             _mainGeometryGraph.SetDebugIds();
 #endif
 
@@ -1834,7 +1814,7 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
         {
             Dictionary<Node, int> nodeToIndex;
             List<Node> listOfNodes = CreateNodeListForBasicGraph(out nodeToIndex);
-            var basicGraph = new BasicGraph<SimpleIntEdge>(GetSimpleIntEdges(nodeToIndex), listOfNodes.Count);
+            var basicGraph = new BasicGraphOnEdges<SimpleIntEdge>(GetSimpleIntEdges(nodeToIndex), listOfNodes.Count);
             IEnumerable<IEnumerable<int>> comps = ConnectedComponentCalculator<SimpleIntEdge>.GetComponents(basicGraph);
             foreach (var comp in comps)
                 _lgData.AddConnectedGeomGraph(GetConnectedSubgraph(comp, listOfNodes));
@@ -1851,7 +1831,7 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
                 var cluster = node as Cluster;
                 if (cluster != null)
                 {
-                    if (cluster.ClusterParents.First() == _mainGeometryGraph.RootCluster)
+                    if (cluster.ClusterParent == _mainGeometryGraph.RootCluster)
                     {
                         //MainGeometryGraph.RootCluster.RemoveCluster(cluster);
                         geomGraph.RootCluster.AddCluster(cluster);
@@ -2165,21 +2145,21 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
                     ret.Nodes.Add(newNode);
                 else
                 {
-                    if (!cl.ClusterParents.Any())
+                    if (cl.ClusterParent == null)
                         ret.RootCluster.AddCluster(cl);
                 }
             }
         }
 
-        static void ReplicateClusterStructure(GeometryGraph geometryGraph, Dictionary<Node, Node> onodesToNewNodes)
-        {
-            foreach (Node onode in geometryGraph.Nodes)
-                foreach (Cluster oclparent in onode.ClusterParents)
-                {
+        static void ReplicateClusterStructure(GeometryGraph geometryGraph, Dictionary<Node, Node> onodesToNewNodes) {
+            foreach (Node onode in geometryGraph.Nodes) {
+                Cluster oclparent = onode.ClusterParent;
+                if (oclparent != null) {
                     Node newParent;
                     if (onodesToNewNodes.TryGetValue(oclparent, out newParent))
                         ((Cluster)newParent).AddNode(onodesToNewNodes[onode]);
                 }
+            }
         }
 
         /*
@@ -2200,7 +2180,7 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
                     {
                         CollapsedBoundary = cluster.CollapsedBoundary,
                         BoundaryCurve = oNode.BoundaryCurve,
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
                         DebugId = oNode.DebugId
 #endif
                     }
@@ -2335,7 +2315,7 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
 
         //        void CountContainingNodesOfLevelLeq(double zoomLevel, IEnumerable<LgCellInfo> cellInfos) {
         //            throw new NotImplementedException();
-        ////            var ciRtree = new RTree<LgCellInfo>();
+        ////            var ciRtree = new RTree<LgCellInfo,Point>();
         ////            var visCellsRect = new Rectangle();
         ////            visCellsRect.SetToEmpty();
         ////            foreach (LgCellInfo ci in cellInfos) {
@@ -2555,29 +2535,6 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
             }
         }
 
-        void DecreaseWeightsAlongOldTrajectories(int i, LgSkeletonLevel skeletonLevel)
-        {
-            foreach (var tuple in skeletonLevel.EdgeTrajectories)
-            {
-                // debug
-                if (!EdgeIsNew(tuple.Key.A, tuple.Key.B, i))
-                {
-                    List<Point> oldPath = tuple.Value;
-                    double iEdgeLevel = Math.Log(Math.Max(tuple.Key.A.ZoomLevel, tuple.Key.B.ZoomLevel), 2);
-                    //double newWeight = //(iEdgeLevel < 1 ? 0.3 : (iEdgeLevel < 2 ? 0.6 : 1));                    
-                    //    0.4 + iEdgeLevel/(Math.Max(i - 1.0, 1.0))*0.2;
-                    //newWeight = Math.Max(0.4, newWeight);
-                    //newWeight = Math.Min(0.6, newWeight);
-
-                    double newWeight = (iEdgeLevel < 1 ? 0.1 : (iEdgeLevel < 2 ? 0.2 : 0.6));
-                    newWeight = Math.Max(0.1, newWeight);
-                    newWeight = Math.Min(0.6, newWeight);
-
-                    skeletonLevel.PathRouter.DecreaseWeightOfEdgesAlongPath(oldPath, newWeight);
-                }
-            }
-        }
-
         void DecreaseWeightsAlongOldTrajectoriesFromSource(int i, LgSkeletonLevel skeletonLevel, LgNodeInfo s)
         {
 
@@ -2606,28 +2563,6 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
             }
         }
 
-
-        List<LineSegment> GetSegmentsOnOldTrajectoriesFromSource(int i, LgSkeletonLevel skeletonLevel, LgNodeInfo s)
-        {
-            var pc = new List<LineSegment>();
-
-            IOrderedEnumerable<LgNodeInfo> neighb = GetNeighborsOnLevel(s, i).OrderBy(n => n.ZoomLevel);
-
-            foreach (var t in neighb)
-            {
-                var tuple = new SymmetricTuple<LgNodeInfo>(s, t);
-                List<Point> path;
-                skeletonLevel.EdgeTrajectories.TryGetValue(tuple, out path);
-                if (path != null)
-                {
-                    for (int j = 0; j < path.Count - 1; j++)
-                    {
-                        pc.Add(new LineSegment(path[j], path[j + 1]));
-                    }
-                }
-            }
-            return pc;
-        }
 
         void SetWeightsAlongOldTrajectoriesFromSourceToMin(int i, LgSkeletonLevel skeletonLevel, LgNodeInfo s, double wmin)
         {
@@ -2680,123 +2615,9 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
             }
         }
 
-        public bool CheckSanityAllRoutes(int i)
-        {
-            var nodes = GetNodeInfosOnLevelLeq(i);
-            bool sanity = true;
-            foreach (LgNodeInfo s in nodes)
-            {
-                sanity &= CheckSanityRoutes(s, i);
-                if (!sanity) break;
-            }
-            return sanity;
-        }
+        
 
-        public bool CheckSanityRoutes(LgNodeInfo s, int i)
-        {
-            List<LgNodeInfo> neighb = GetNeighborsOnLevel(s, i);
-            Point rootPoint = _lgData.SkeletonLevels[i].PathRouter.AddVisGraphVertex(s.Center);
-
-            var graph = new LgPathRouter();
-            foreach (LgNodeInfo t in neighb)
-            {
-                List<Point> path = _lgData.SkeletonLevels[i].GetTrajectory(s, t);
-                for (int j = 0; j < path.Count - 1; j++)
-                {
-                    graph.AddVisGraphEdge(path[j], path[j + 1]);
-                }
-            }
-            bool hasCycles = graph.HasCycles(rootPoint);
-            if (hasCycles)
-                Console.WriteLine("BAD SP Tree at: " + s);
-            return !hasCycles;
-        }
-
-        void CopyGraphToNextLevel(int i)
-        {
-            foreach (var st in _lgData.SkeletonLevels[i].PathRouter.GetAllEdgesVisibilityEdges())
-            {
-                _lgData.SkeletonLevels[i + 1].PathRouter.AddVisGraphEdge(st.SourcePoint, st.TargetPoint);
-            }
-        }
-
-
-        public void ClearSkeleton(int iLevel)
-        {
-            _lgData.SkeletonLevels[iLevel].Clear();
-        }
-
-        public void RunOverlapRemovalBitmap(int iLevel)
-        {
-            var fixedNodes = iLevel > 0
-                ? GetNodeInfosOnLevelLeq(iLevel - 1)
-                : new List<LgNodeInfo>();
-            var moveableNodes = GetNodeInfosOnLevel(iLevel);
-
-            Rectangle[] fixedBoxes = (from node in fixedNodes select node.BoundaryOnLayer.BoundingBox).ToArray();
-            Rectangle[] moveableBoxes = (from node in moveableNodes select node.BoundaryOnLayer.BoundingBox).ToArray();
-
-            var fixedSegments = iLevel > 0
-                ? _lgData.Levels[iLevel - 1].GetAllRailsEndpoints().ToArray()
-                : new SymmetricSegment[0];
-
-            var orb = new OverlapRemovalFixedSegmentsBitmap(moveableBoxes, fixedBoxes, fixedSegments)
-            {
-                NumPixelsPadding = 10
-            };
-
-
-            var fixedRectTree = new RTree<Rectangle>();
-            var fixedSegTree = new RTree<SymmetricSegment>();
-            foreach (Rectangle rect in fixedBoxes)
-                fixedRectTree.Add(rect, rect);
-            foreach (var seg in fixedSegments)
-                fixedSegTree.Add(new Rectangle(seg.A, seg.B), seg);
-
-            int numPlaced = 0;
-            while (true)
-            {
-                numPlaced = orb.PositionAllMoveableRectsSameSize(numPlaced, fixedRectTree, fixedSegTree);
-                if (numPlaced >= moveableBoxes.Count()) break;
-                orb.ScaleBbox(1.25);
-            }
-
-            Point[] translations = orb.GetTranslations();
-            int i = 0;
-            foreach (var mv in moveableNodes)
-            {
-                mv.Translate(translations[i++]);
-            }
-        }
-
-        static void ShowNodesAndSegmentsForOverlapRemoval(IEnumerable<LgNodeInfo> fixedNodes,
-            IEnumerable<LgNodeInfo> moveableNodes, SymmetricSegment[] fixedSegments)
-        {
-#if TEST_MSAGL && !SHARPKIT
-            var l = new List<DebugCurve>();
-            if (fixedNodes != null && fixedNodes.Any())
-            {
-                foreach (var node in fixedNodes)
-                {
-                    l.Add(new DebugCurve(200, 0.1, "red", node.BoundaryCurve));
-                }
-            }
-            if (fixedSegments != null && fixedSegments.Any())
-            {
-                foreach (var seg in fixedSegments)
-                {
-                    var ls = new LineSegment(seg.A, seg.B);
-                    l.Add(new DebugCurve(100, 0.1, "magenta", ls));
-                }
-            }
-            foreach (var node in moveableNodes)
-            {
-                l.Add(new DebugCurve(200, 0.1, "green", node.BoundaryCurve));
-            }
-            LayoutAlgorithmSettings.ShowDebugCurves(l.ToArray());
-#endif
-        }
-
+        
         void ClearLevels(int num)
         {
             _lgData.Levels.Clear();
@@ -3056,7 +2877,7 @@ namespace Microsoft.Msagl.Layout.LargeGraphLayout
         void AssignRailsByTrajectories(int iLevel)
         {
             var edges = new List<Edge>(_lgData.Levels[iLevel]._railsOfEdges.Keys);
-            _lgData.Levels[iLevel]._railTree = new RTree<Rail>();
+            _lgData.Levels[iLevel]._railTree = new RTree<Rail,Point>();
             foreach (Edge edge in edges)
             {
                 LgEdgeInfo ei = _lgData.GeometryEdgesToLgEdgeInfos[edge];
@@ -3651,7 +3472,7 @@ return new Rectangle(nodeInfo.Center + offset - d, nodeInfo.Center + offset + d)
         {
             var scale = CurrentZoomLevel;
 
-            var labelRTree = new RTree<LgNodeInfo>();
+            var labelRTree = new RTree<LgNodeInfo, Point>();
 
             // insert all nodes inserted before
             foreach (var node in _railGraph.Nodes)
@@ -3723,9 +3544,9 @@ return new Rectangle(nodeInfo.Center + offset - d, nodeInfo.Center + offset + d)
 
             var nodes = GetNodeInfosOnLevelLeq(iLevel);
 
-            var labelRTree = new RTree<LgNodeInfo>();
+            var labelRTree = new RTree<LgNodeInfo, Point>();
 
-            var skippedRTree = new RTree<LgNodeInfo>();
+            var skippedRTree = new RTree<LgNodeInfo, Point>();
 
 
             // insert all nodes inserted before

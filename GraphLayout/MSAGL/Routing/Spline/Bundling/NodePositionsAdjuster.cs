@@ -36,7 +36,7 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
         /// apply a number of heuristics to improve current routing
         /// </summary>
         internal static void FixRouting(MetroGraphData metroGraphData, BundlingSettings bundlingSettings) {
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
             Debug.Assert(metroGraphData.looseIntersections.HubPositionsAreOK());
 #endif
             //TimeMeasurer.DebugOutput("Initial cost = " + CostCalculator.Cost(metroGraphData, bundlingSettings));
@@ -49,7 +49,7 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
             var step = 0;
             int MaxSteps = 10;
             while (++step < MaxSteps) {
-/*#if TEST_MSAGL && TEST_MSAGL
+/*#if TEST_MSAGL
                 Debug.Assert(metroGraphData.looseIntersections.HubPositionsAreOK());
 #endif*/
                 //heuristics to improve routing
@@ -94,7 +94,7 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
             if (circlesHierarchy == null) return false;
             var gluingMap = new Dictionary<Station, Station>();
             var gluedDomain = new Set<Station>();
-            RectangleNodeUtils.CrossRectangleNodes<Station>(circlesHierarchy, circlesHierarchy,
+            RectangleNodeUtils.CrossRectangleNodes<Station, Point>(circlesHierarchy, circlesHierarchy,
                                                             (i, j) => TryToGlueNodes(i, j, gluingMap, gluedDomain));
             if (gluingMap.Count == 0)
                 return false;
@@ -118,17 +118,17 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
             return true;
         }
 
-        RectangleNode<Station> GetCirclesHierarchy() {
+        RectangleNode<Station, Point> GetCirclesHierarchy() {
             foreach (var v in metroGraphData.VirtualNodes()) {
                 v.Radius = GetCurrentHubRadius(v);
             }
 
-            return RectangleNode<Station>.CreateRectangleNodeOnEnumeration(from i in metroGraphData.VirtualNodes()
+            return RectangleNode<Station, Point>.CreateRectangleNodeOnEnumeration(from i in metroGraphData.VirtualNodes()
                                                                            let p = i.Position
                                                                            let r = Math.Max(i.Radius, 5)
                                                                            let del = new Point(r, r)
                                                                            let b = new Rectangle(p + del, p - del)
-                                                                           select new RectangleNode<Station>(i, b));
+                                                                           select new RectangleNode<Station, Point>(i, b));
         }
 
         double GetCurrentHubRadius(Station node) {

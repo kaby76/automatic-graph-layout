@@ -98,7 +98,7 @@ namespace Microsoft.Msagl.Layout.MDS {
             ScaleToAverageEdgeLength(geometryGraph, x, y);
             
             if (iter > 0) {
-                AllPairsDistances apd = new AllPairsDistances(geometryGraph, false);
+                AllPairsDistances apd = new AllPairsDistances(geometryGraph);
                 apd.Run();
                 double[][] d = apd.Result;
                 double[][] w = MultidimensionalScaling.ExponentialWeightMatrix(d, exponent);
@@ -168,17 +168,7 @@ namespace Microsoft.Msagl.Layout.MDS {
 
             if (settings.RemoveOverlaps)
             {
-                switch (settings.OverlapRemovalMethod)
-                {
-                    case OverlapRemovalMethod.Prism:
-                        ProximityOverlapRemoval.RemoveOverlaps(compGraph, settings.NodeSeparation);
-                        break;
-                    case OverlapRemovalMethod.MinimalSpanningTree:
-                        GTreeOverlapRemoval.RemoveOverlaps(compGraph.Nodes.ToArray(), settings.NodeSeparation);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                GTreeOverlapRemoval.RemoveOverlaps(compGraph.Nodes.ToArray(), settings.NodeSeparation);
             }
             compGraph.BoundingBox = compGraph.PumpTheBoxToTheGraphWithMargins();
         }
@@ -223,7 +213,7 @@ namespace Microsoft.Msagl.Layout.MDS {
             }
         }
 
-        static void UpdateTree(RectangleNode<Node> tree) {
+        static void UpdateTree(RectangleNode<Node, Point> tree) {
             if (tree.IsLeaf)
                 tree.Rectangle = tree.UserData.BoundingBox;
             else {
@@ -235,11 +225,11 @@ namespace Microsoft.Msagl.Layout.MDS {
 
         }
 
-        static int NumberOfHits(int numberOfChecks, Random random, RectangleNode<Node> tree, int maxNumberOfHits) {
+        static int NumberOfHits(int numberOfChecks, Random random, RectangleNode<Node, Point> tree, int maxNumberOfHits) {
            // var l = new List<Point>();
             int numberOfHits = 0;
             for (int i = 0; i < numberOfChecks; i++) {
-                Point point = RandomPointFromBox(random, ref tree.rectangle);
+                Point point = RandomPointFromBox(random, (Rectangle)tree.rectangle);
              //   l.Add(point);
                 if ((tree.FirstHitNode(point, (p, t) => HitTestBehavior.Stop)) != null)
                     numberOfHits++;
@@ -250,7 +240,7 @@ namespace Microsoft.Msagl.Layout.MDS {
             return numberOfHits;
         }
         /*
-        static IEnumerable<DebugCurve> Getdc(RectangleNode<Node> tree, List<Point> points) {
+        static IEnumerable<DebugCurve> Getdc(RectangleNode<Node, Point> tree, List<Point> points) {
             foreach (var point in points)
                 yield return new DebugCurve("red", new Ellipse(5, 5, point));
             foreach (var rn in tree.GetAllLeafNodes()) {
@@ -259,13 +249,13 @@ namespace Microsoft.Msagl.Layout.MDS {
             }
         }
         */
-        static RectangleNode<Node> BuildNodeTree(IList<Node> nodes) {
-            return  RectangleNode<Node>.CreateRectangleNodeOnEnumeration(
-                nodes.Select(n => new RectangleNode<Node>(n, n.BoundingBox)));
+        static RectangleNode<Node, Point> BuildNodeTree(IList<Node> nodes) {
+            return  RectangleNode<Node, Point>.CreateRectangleNodeOnEnumeration(
+                nodes.Select(n => new RectangleNode<Node, Point>(n, n.BoundingBox)));
         }
 
 
-        static Point RandomPointFromBox(Random random, ref Rectangle boundingBox) {
+        static Point RandomPointFromBox(Random random, Rectangle boundingBox) {
             var x=random.NextDouble();
             var y=random.NextDouble();
             var p= new Point(boundingBox.Left + boundingBox.Width * x, boundingBox.Bottom + boundingBox.Height * y);

@@ -17,7 +17,7 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
         internal Func<EdgeGeometry, List<Shape>> MakeTransparentShapesOfEdgeGeometry { get; set; }
         internal BundlingSettings BundlingSettings { get; set; }
         internal EdgeGeometry[] EdgeGeometries { get; set; }
-        internal RectangleNode<Polyline> ObstacleHierarchy { get; set; }
+        internal RectangleNode<Polyline, Point> ObstacleHierarchy { get; set; }
 
         SdVertex[] vertexArray;
         internal Cdt Cdt { get; set; }
@@ -246,7 +246,7 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
             }
         }
 
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
         //        void DebugShow(SdSimpleVertex prevElement, SdBoneEdge outBoneEdge) {
         //            SplineRouter.ShowVisGraph(this.VisibilityGraph,
         //                                      this.ObstacleHierarchy.GetAllLeaves(),
@@ -401,7 +401,6 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
         }
 
         void SetPortVerticesAndObstacles(Port port, bool sources, out Polyline poly) {
-            poly = null;
             var cbport = port as ClusterBoundaryPort;
             if (cbport != null) {
                 //SplineRouter.ShowVisGraph(this.VisibilityGraph, this.ObstacleHierarchy.GetAllLeaves(), null, new[]{cbport.LoosePolyline});
@@ -497,11 +496,11 @@ namespace Microsoft.Msagl.Routing.Spline.Bundling {
 
         void SetVertexTriangles() {
             var triangleTree =
-                RectangleNode<CdtTriangle>.CreateRectangleNodeOnEnumeration(
-                    Cdt.GetTriangles().Select(t => new RectangleNode<CdtTriangle>(t, t.BoundingBox())));
+                RectangleNode<CdtTriangle,Point>.CreateRectangleNodeOnEnumeration(
+                    Cdt.GetTriangles().Select(t => new RectangleNode<CdtTriangle,Point>(t, t.BoundingBox())));
             var vertexTree =
-                RectangleNode<SdVertex>.CreateRectangleNodeOnEnumeration(
-                    vertexArray.Select(v => new RectangleNode<SdVertex>(v, new Rectangle(v.Point))));
+                RectangleNode<SdVertex,Point>.CreateRectangleNodeOnEnumeration(
+                    vertexArray.Select(v => new RectangleNode<SdVertex,Point>(v, new Rectangle(v.Point))));
 
             RectangleNodeUtils.CrossRectangleNodes(triangleTree, vertexTree, TryToAssigenTriangleToVertex);
             foreach (var v in vertexArray) {

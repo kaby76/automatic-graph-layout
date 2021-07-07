@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.Msagl.Core.Geometry;
+using Microsoft.Msagl.Core.GraphAlgorithms;
 
 namespace Microsoft.Msagl.Layout.Layered {
     /// <summary>
@@ -12,11 +13,11 @@ namespace Microsoft.Msagl.Layout.Layered {
     /// </summary>
     internal class MetroMapOrdering {
         LayerArrays layerArrays;
-        Dictionary<int, Point> nodePositions;
+        Dictionary<int, IntPair> nodePositions;
         ProperLayeredGraph properLayeredGraph;
 
         MetroMapOrdering(ProperLayeredGraph properLayeredGraph, LayerArrays layerArrays,
-                         Dictionary<int, Point> nodePositions) {
+                         Dictionary<int, IntPair> nodePositions) {
             this.properLayeredGraph = properLayeredGraph;
             this.layerArrays = layerArrays;
             this.nodePositions = nodePositions;
@@ -26,7 +27,7 @@ namespace Microsoft.Msagl.Layout.Layered {
         /// Reorder only points having identical nodePositions
         /// </summary>
         internal static void UpdateLayerArrays(ProperLayeredGraph properLayeredGraph, LayerArrays layerArrays,
-                                               Dictionary<int, Point> nodePositions) {
+                                               Dictionary<int, IntPair> nodePositions) {
             new MetroMapOrdering(properLayeredGraph, layerArrays, nodePositions).UpdateLayerArrays();
         }
 
@@ -34,23 +35,24 @@ namespace Microsoft.Msagl.Layout.Layered {
         /// Reorder virtual nodes between the same pair of real nodes
         /// </summary>
         internal static void UpdateLayerArrays(ProperLayeredGraph properLayeredGraph, LayerArrays layerArrays) {
-            Dictionary<int, Point> nodePositions = BuildInitialNodePositions(properLayeredGraph, layerArrays);
+            Dictionary<int, IntPair> nodePositions = BuildInitialNodePositions(properLayeredGraph, layerArrays);
             UpdateLayerArrays(properLayeredGraph, layerArrays, nodePositions);
         }
 
-        static Dictionary<int, Point> BuildInitialNodePositions(ProperLayeredGraph properLayeredGraph,
+        static Dictionary<int, IntPair> BuildInitialNodePositions(ProperLayeredGraph properLayeredGraph,
                                                                 LayerArrays layerArrays) {
-            var result = new Dictionary<int, Point>();
+            var result = new Dictionary<int, IntPair>();
             for (int i = 0; i < layerArrays.Layers.Length; i++) {
                 int prev = 0, curr = 0;
-                while (curr < layerArrays.Layers[i].Length) {
-                    while (curr < layerArrays.Layers[i].Length &&
-                           properLayeredGraph.IsVirtualNode(layerArrays.Layers[i][curr])) curr++;
+                var layer = layerArrays.Layers[i];
+                while (curr < layer.Length) {
+                    while (curr < layer.Length &&
+                           properLayeredGraph.IsVirtualNode(layer[curr])) curr++;
                     for (int j = prev; j < curr; j++)
-                        result[layerArrays.Layers[i][j]] = new Point(i, prev);
+                        result[layer[j]] = new IntPair(i, prev);
 
-                    if (curr < layerArrays.Layers[i].Length)
-                        result[layerArrays.Layers[i][curr]] = new Point(i, curr);
+                    if (curr < layer.Length)
+                        result[layer[curr]] = new IntPair(i, curr);
                     curr++;
                     prev = curr;
                 }
@@ -61,50 +63,47 @@ namespace Microsoft.Msagl.Layout.Layered {
 
         void UpdateLayerArrays() {
             //algo stuff here
-            Dictionary<Point, List<int>> ordering = CreateInitialOrdering();
+            Dictionary<IntPair, List<int>> ordering = CreateInitialOrdering();
             ordering = BuildOrdering(ordering);
             RestoreLayerArrays(ordering);
         }
 
-        Dictionary<Point, List<int>> CreateInitialOrdering() {
-            var initialOrdering = new Dictionary<Point, List<int>>();
-            for (int i = 0; i < layerArrays.Layers.Length; i++)
-                for (int j = 0; j < layerArrays.Layers[i].Length; j++) {
-                    int node = layerArrays.Layers[i][j];
+        Dictionary<IntPair, List<int>> CreateInitialOrdering() {
+            var initialOrdering = new Dictionary<IntPair, List<int>>();
+            foreach (var layer in layerArrays.Layers) {
+                for (int j = 0; j < layer.Length; j++) {
+                    int node = layer[j];
                     if (!initialOrdering.ContainsKey(nodePositions[node]))
                         initialOrdering[nodePositions[node]] = new List<int>();
                     initialOrdering[nodePositions[node]].Add(node);
                 }
-
+            }
             return initialOrdering;
         }
 
 
-        Dictionary<Point, List<int>> BuildOrdering(Dictionary<Point, List<int>> initialOrdering) {
+        Dictionary<IntPair, List<int>> BuildOrdering(Dictionary<IntPair, List<int>> initialOrdering) {
             //run through nodes points and build order
-            var result = new Dictionary<Point, List<int>>();
+            var result = new Dictionary<IntPair, List<int>>();
             var reverseOrder = new Dictionary<int, int>();
-            for (int i = 0; i < layerArrays.Layers.Length; i++)
-                for (int j = 0; j < layerArrays.Layers[i].Length; j++) {
-                    int node = layerArrays.Layers[i][j];
+            foreach (var layer in layerArrays.Layers)
+                for (int j = 0; j < layer.Length; j++) {
+                    int node = layer[j];
 
                     //already processed
                     if (result.ContainsKey(nodePositions[node])) continue;
 
-                    result[nodePositions[node]] = BuildNodeOrdering(initialOrdering[nodePositions[node]], reverseOrder);
+                    BuildNodeOrdering(initialOrdering[nodePositions[node]], reverseOrder);
+                    result[nodePositions[node]] = initialOrdering[nodePositions[node]];
                 }
-
             return result;
         }
 
-        List<int> BuildNodeOrdering(List<int> nodeOrdering, Dictionary<int, int> inverseToOrder) {
-            List<int> result = nodeOrdering;
+        void BuildNodeOrdering(List<int> nodeOrdering, Dictionary<int, int> inverseToOrder) {
+            nodeOrdering.Sort(Comparison(inverseToOrder));
 
-            result.Sort(Comparison(inverseToOrder));
-
-            for (int i = 0; i < result.Count; i++)
-                inverseToOrder[result[i]] = i;
-            return result;
+            for (int i = 0; i < nodeOrdering.Count; i++)
+                inverseToOrder[nodeOrdering[i]] = i;
         }
 
         Comparison<int> Comparison(Dictionary<int, int> inverseToOrder) {
@@ -117,19 +116,19 @@ namespace Microsoft.Msagl.Layout.Layered {
                        int pred1 = properLayeredGraph.Pred(node1).ElementAt(0);
                        int pred2 = properLayeredGraph.Pred(node2).ElementAt(0);
 
-                       Point succPoint1 = nodePositions[succ1];
-                       Point succPoint2 = nodePositions[succ2];
-                       Point predPoint1 = nodePositions[pred1];
-                       Point predPoint2 = nodePositions[pred2];
+                       IntPair succIntPair1 = nodePositions[succ1];
+                       IntPair succIntPair2 = nodePositions[succ2];
+                       IntPair predIntPair1 = nodePositions[pred1];
+                       IntPair predIntPair2 = nodePositions[pred2];
 
-                       if (succPoint1 != succPoint2) {
-                           if (predPoint1 != predPoint2)
-                               return predPoint1.CompareTo(predPoint2);
-                           return succPoint1.CompareTo(succPoint2);
+                       if (succIntPair1 != succIntPair2) {
+                           if (predIntPair1 != predIntPair2)
+                               return predIntPair1.CompareTo(predIntPair2);
+                           return succIntPair1.CompareTo(succIntPair2);
                        }
                        if (properLayeredGraph.IsVirtualNode(succ1)) {
-                           if (predPoint1 != predPoint2)
-                               return predPoint1.CompareTo(predPoint2);
+                           if (predIntPair1 != predIntPair2)
+                               return predIntPair1.CompareTo(predIntPair2);
 
                            int o1 = inverseToOrder[succ1];
                            int o2 = inverseToOrder[succ2];
@@ -148,15 +147,18 @@ namespace Microsoft.Msagl.Layout.Layered {
                    };
         }
 
-        void RestoreLayerArrays(Dictionary<Point, List<int>> ordering) {
-            for (int i = 0; i < layerArrays.Layers.Length; i++) {
+        void RestoreLayerArrays(Dictionary<IntPair, List<int>> ordering) {
+            foreach (var layer in layerArrays.Layers) {
                 int pred = 0, tec = 0;
-                while (tec < layerArrays.Layers[i].Length) {
-                    while (tec < layerArrays.Layers[i].Length &&
-                           nodePositions[layerArrays.Layers[i][pred]] == nodePositions[layerArrays.Layers[i][tec]])
+                while (tec < layer.Length) {
+                    while (tec < layer.Length &&
+                           nodePositions[layer[pred]] == nodePositions[layer[tec]])
                         tec++;
-                    for (int j = pred; j < tec; j++)
-                        layerArrays.Layers[i][j] = ordering[nodePositions[layerArrays.Layers[i][j]]][j - pred];
+                    var t = ordering[nodePositions[layer[pred]]];
+                    //System.Diagnostics.Debug.Assert(t.Count == tec - pred);
+                    for (int j = pred; j < tec; j++) {
+                        layer[j] = t[j - pred];
+                    }
                     pred = tec;
                 }
             }

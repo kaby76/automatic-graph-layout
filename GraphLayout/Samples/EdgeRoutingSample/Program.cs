@@ -8,6 +8,7 @@ using Microsoft.Msagl.Core.Routing;
 using Microsoft.Msagl.DebugHelpers;
 using Microsoft.Msagl.DebugHelpers.Persistence;
 using Microsoft.Msagl.GraphViewerGdi;
+using Microsoft.Msagl.Layout.Layered;
 using Microsoft.Msagl.Routing;
 using Microsoft.Msagl.Routing.Rectilinear;
 using Node = Microsoft.Msagl.Core.Layout.Node;
@@ -91,8 +92,7 @@ namespace EdgeRoutingSample {
             Arrowheads.TrimSplineAndCalculateArrowheads(edge.EdgeGeometry,
                                                          edge.Source.BoundaryCurve,
                                                          edge.Target.BoundaryCurve,
-                                                         spline, true,
-                                                         false);
+                                                         spline, true);
 
         }
     }

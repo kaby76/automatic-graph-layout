@@ -56,7 +56,7 @@ namespace Microsoft.Msagl.GraphViewerGdi{
         internal static double Dpi = GetDotsPerInch();
         internal static double dpix;
         internal static double dpiy;
-        readonly MdsLayoutSettings mdsLayoutSettings;
+        public MdsLayoutSettings mdsLayoutSettings;
         readonly RankingLayoutSettings rankingSettings = new RankingLayoutSettings();
         readonly SugiyamaLayoutSettings sugiyamaSettings;
         LayoutMethod currentLayoutMethod = LayoutMethod.UseSettingsOfTheGraph;
@@ -76,7 +76,7 @@ namespace Microsoft.Msagl.GraphViewerGdi{
         /// Default constructor
         /// </summary>
         public GViewer(){
-            mdsLayoutSettings = new MdsLayoutSettings();
+            mdsLayoutSettings = new MdsLayoutSettings() { RunInParallel = this.AsyncLayout };
             sugiyamaSettings = new SugiyamaLayoutSettings();
             // This call is required by the Windows.Forms Form Designer.
             InitializeComponent();
@@ -236,7 +236,11 @@ namespace Microsoft.Msagl.GraphViewerGdi{
         public bool ForwardEnabled{
             get { return forwardButton.ImageIndex == (int) ImageEnum.Forward; }
 
-            set { forwardButton.ImageIndex = (int) (value ? ImageEnum.Forward : ImageEnum.ForwardDis); }
+            set {
+                int i = (int)(value ? ImageEnum.Forward : ImageEnum.ForwardDis);
+                if (forwardButton.ImageIndex != i)
+                    forwardButton.ImageIndex = i;
+            }
         }
 
         /// <summary>
@@ -245,7 +249,11 @@ namespace Microsoft.Msagl.GraphViewerGdi{
         public bool BackwardEnabled{
             get { return backwardButton.ImageIndex == (int) ImageEnum.Backward; }
 
-            set { backwardButton.ImageIndex = (int) (value ? ImageEnum.Backward : ImageEnum.BackwardDis); }
+            set {
+                int i = (int)(value ? ImageEnum.Backward : ImageEnum.BackwardDis);
+                if (backwardButton.ImageIndex != i)
+                    backwardButton.ImageIndex = i;
+            }
         }
 
         /// <summary>

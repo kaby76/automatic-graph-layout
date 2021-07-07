@@ -43,7 +43,7 @@ namespace Microsoft.Msagl.Layout.Layered {
         /// <summary>
         /// Returns true if v is a virtual vertex
         /// </summary>
-        /// <param name="v"></param>
+        /// <param name="v"></param>GG
         /// <returns></returns>
         bool IsVirtual(int v) { return v >= nOfOriginalVertices; }
 
@@ -286,8 +286,8 @@ namespace Microsoft.Msagl.Layout.Layered {
 
         IEnumerable<int> UpperEdgeMedians(int target) {
             object medians = this.BT ? upperMedians[target] : lowMedians[target];
-            IntPair ip = medians as IntPair;
-            if (ip != null) {
+            if (medians is IntPair) {
+                IntPair ip = medians as IntPair;
                 if (this.LR) {
                     yield return ip.First; yield return ip.Second;
                 } else {
@@ -466,8 +466,6 @@ namespace Microsoft.Msagl.Layout.Layered {
                         }
                     }
 
-                    positionOfInnerEdgeSource = Pos(Source(innerEdge));
-
                     //look for conflicting edges with targets to the right from the target of innerEdge
                     for (int k = NextRight(Pos(Target(innerEdge))); IsNotRightFrom(k, lastTargetPos); k = NextRight(k)) {
 
@@ -601,7 +599,7 @@ namespace Microsoft.Msagl.Layout.Layered {
              * taking into account separation between the blocks.
              */
             //create the graph first
-            List<IntEdge> edges = new List<IntEdge>();
+            List<PolyIntEdge> edges = new List<PolyIntEdge>();
             for (int v = 0; v < nOfVertices; v++) {
                 if (v == root[v])//v is a root
                 {
@@ -609,16 +607,16 @@ namespace Microsoft.Msagl.Layout.Layered {
                     do {
                         int rightNeighbor;
                         if (TryToGetRightNeighbor(w, out rightNeighbor))
-                            edges.Add(new IntEdge(v, root[rightNeighbor]));
+                            edges.Add(new PolyIntEdge(v, root[rightNeighbor]));
                         w = align[w];
                     }
                     while (w != v);
                 }
             }
 
-            BasicGraph<IntEdge> blockGraph = new BasicGraph<IntEdge>(edges, nOfVertices);
+            BasicGraphOnEdges<PolyIntEdge> blockGraph = new BasicGraphOnEdges<PolyIntEdge>(edges, nOfVertices);
             //sort the graph in the topological order
-            int[] topoSort = IntEdge.GetOrder(blockGraph);
+            int[] topoSort = PolyIntEdge.GetOrder(blockGraph);
             //start placing the blocks according to the order
 
             foreach (int v in topoSort) {

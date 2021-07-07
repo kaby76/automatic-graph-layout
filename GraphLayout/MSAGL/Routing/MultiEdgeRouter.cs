@@ -16,7 +16,7 @@ namespace Microsoft.Msagl.Routing {
         readonly InteractiveEdgeRouter interactiveEdgeRouter;
         readonly BundlingSettings bundlingSettings;
         readonly Func<EdgeGeometry, List<Shape>> transparentShapeSetter;
-        readonly RectangleNode<ICurve> nodeTree;
+        readonly RectangleNode<ICurve,Point> nodeTree;
 
 
         internal MultiEdgeRouter(List<Edge[]> multiEdgeGeoms, InteractiveEdgeRouter interactiveEdgeRouter, IEnumerable<ICurve> nodeBoundaryCurves, BundlingSettings bundlingSettings, Func<EdgeGeometry, List<Shape>> transparentShapeSetter) {
@@ -25,7 +25,7 @@ namespace Microsoft.Msagl.Routing {
             this.interactiveEdgeRouter = interactiveEdgeRouter;
             this.bundlingSettings = bundlingSettings;
             this.transparentShapeSetter = transparentShapeSetter;
-            nodeTree = RectangleNode<ICurve>.CreateRectangleNodeOnData(nodeBoundaryCurves, c => c.BoundingBox);
+            nodeTree = RectangleNode<ICurve,Point>.CreateRectangleNodeOnData(nodeBoundaryCurves, c => c.BoundingBox);
         }
 
         internal void Run() {
@@ -93,7 +93,7 @@ namespace Microsoft.Msagl.Routing {
         }
 
         void UniteConnectedPreGraphs(ref List<PreGraph> preGraphs) {
-            BasicGraph<IntPair> intersectionGraph = GetIntersectionGraphOfPreGraphs(preGraphs);
+            BasicGraphOnEdges<IntPair> intersectionGraph = GetIntersectionGraphOfPreGraphs(preGraphs);
             if (intersectionGraph == null)
                 return;
             var connectedComponents = ConnectedComponentCalculator<IntPair>.GetComponents(intersectionGraph);
@@ -119,17 +119,17 @@ namespace Microsoft.Msagl.Routing {
                 pg.AddNodeBoundary(curve);
         }
 
-        static BasicGraph<IntPair> GetIntersectionGraphOfPreGraphs(List<PreGraph> preGraphs) {
+        static BasicGraphOnEdges<IntPair> GetIntersectionGraphOfPreGraphs(List<PreGraph> preGraphs) {
             var intersectingPairs = EnumeratePairsOfIntersectedPreGraphs(preGraphs);
             if (intersectingPairs.Any())
-                return new BasicGraph<IntPair>(intersectingPairs, preGraphs.Count);
+                return new BasicGraphOnEdges<IntPair>(intersectingPairs, preGraphs.Count);
             return null;
         }
 
         static IEnumerable<IntPair> EnumeratePairsOfIntersectedPreGraphs(List<PreGraph> preGraphs) {
-            var rn = RectangleNode<int>.CreateRectangleNodeOnData(Enumerable.Range(0, preGraphs.Count), i => preGraphs[i].boundingBox);
+            var rn = RectangleNode<int,Point>.CreateRectangleNodeOnData(Enumerable.Range(0, preGraphs.Count), i => preGraphs[i].boundingBox);
             var list = new List<IntPair>();
-            RectangleNodeUtils.CrossRectangleNodes<int>(rn, rn, (a, b) => list.Add(new IntPair(a, b)));
+            RectangleNodeUtils.CrossRectangleNodes<int,Point>(rn, rn, (a, b) => list.Add(new IntPair(a, b)));
             return list;
         }
 

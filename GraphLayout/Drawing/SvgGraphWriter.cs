@@ -11,6 +11,7 @@ using Microsoft.Msagl.Core.Geometry.Curves;
 using System.Linq;
 using Microsoft.Msagl.DebugHelpers;
 using LineSegment = Microsoft.Msagl.Core.Geometry.Curves.LineSegment;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Msagl.Drawing
 {
@@ -85,7 +86,7 @@ namespace Microsoft.Msagl.Drawing
                 WriteEdges();
                 WriteNodes();
                 
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
                 WriteDebugCurves();
 #endif
                 Close();
@@ -97,7 +98,7 @@ namespace Microsoft.Msagl.Drawing
                 Thread.CurrentThread.CurrentCulture = currentCulture;
             }
         }
-#if TEST_MSAGL && TEST_MSAGL
+#if TEST_MSAGL
         void WriteDebugCurves() {
             if(_graph.DebugCurves!=null)
                 foreach (var debugCurve in _graph.DebugCurves) {
@@ -160,16 +161,38 @@ namespace Microsoft.Msagl.Drawing
 
             var x = label.Center.X - label.Width / 2;
             var y = label.Center.Y + label.Height / (2 * yScaleAdjustment);
+            var fontSize = 16;
             WriteStartElement("text");
             WriteAttribute("x", x);
             WriteAttribute("y", y);
             WriteAttribute("font-family", "Arial");
-            WriteAttribute("font-size", "16");
+            WriteAttribute("font-size", fontSize);
             WriteAttribute("fill", MsaglColorToSvgColor(label.FontColor));
-            xmlWriter.WriteRaw(NodeSanitizer(label.Text));
+            WriteLabelText(label.Text, x, fontSize);
             WriteEndElement();
         }
 
+        private void WriteLabelText(string text, double xContainer, double fontSize) 
+        {
+            var endOfLines = new List<string> { "\r\n", "\r", "\n" };
+            var textLines = Regex.Split(NodeSanitizer(text), "(\r\n|\r|\n)").Where(it => !endOfLines.Contains(it)).ToList();
+            var isFirstLine = true;
+            textLines.ForEach(line => 
+            {
+                WriteStartElement("tspan");
+                WriteAttribute("x", xContainer);
+                if (isFirstLine) {
+                    isFirstLine = false;
+                    WriteAttribute("dy", -1 * fontSize * (textLines.Count - 1));
+                }
+                else 
+                {
+                    WriteAttribute("dy", fontSize);
+                }
+                xmlWriter.WriteRaw(line);
+                WriteEndElement();
+            });
+        }
 
         protected string MsaglColorToSvgColor(Color color) {
             if (BlackAndWhite)
@@ -248,7 +271,7 @@ namespace Microsoft.Msagl.Drawing
                 AddArrow(iCurve.Start, geometryEdge.EdgeGeometry.SourceArrowhead.TipPosition, edge);
             if (geometryEdge.EdgeGeometry != null && geometryEdge.EdgeGeometry.TargetArrowhead != null)
                 AddArrow(iCurve.End, geometryEdge.EdgeGeometry.TargetArrowhead.TipPosition, edge);
-            if (edge.Label != null && edge.Label.GeometryLabel != null && edge.GeometryEdge.Label != null)
+            if (edge.Label != null && edge.Label.GeometryLabel != null)
                 WriteLabel(edge.Label);
         }
 
@@ -357,7 +380,7 @@ namespace Microsoft.Msagl.Drawing
                 case Shape.InvHouse:
                 case Shape.Ellipse:
                 case Shape.DrawFromGeometry:
-
+                case Shape.Hexagon:
 #if TEST_MSAGL
                 case Shape.TestShape:
 #endif

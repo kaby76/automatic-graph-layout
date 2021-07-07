@@ -845,7 +845,7 @@ namespace Microsoft.Msagl.Drawing {
 
         static Cluster GetActiveObjectCluster(IViewerObject viewerObject) {
             var node = viewerObject.DrawingObject.GeometryObject as GeometryNode;
-            return node != null ? node.ClusterParents.FirstOrDefault() : null;
+            return node != null ? node.ClusterParent : null;
         }
 
 
@@ -947,9 +947,7 @@ namespace Microsoft.Msagl.Drawing {
                 Arrowheads.TrimSplineAndCalculateArrowheads(EdgeGeometry,
                                                             GeometryNode(SourceOfInsertedEdge).BoundaryCurve,
                                                             GeometryNode(TargetOfInsertedEdge).BoundaryCurve,
-                                                            EdgeGeometry.Curve, true,
-                                                            graph.LayoutAlgorithmSettings.EdgeRoutingSettings
-                                                                 .KeepOriginalSpline);
+                                                            EdgeGeometry.Curve, true);
 
             }
             else {

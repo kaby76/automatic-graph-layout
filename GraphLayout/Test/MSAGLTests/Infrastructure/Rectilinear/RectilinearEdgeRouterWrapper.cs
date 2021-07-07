@@ -50,10 +50,10 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         internal bool NoPorts { get; set; }
 
         private Dictionary<Obstacle, List<Obstacle>> spatialChildrenToGroups;
-        private Dictionary<Clump, RectangleNode<Obstacle>> clumpToRectNode;
+        private Dictionary<Clump, RectangleNode<Obstacle,Point>> clumpToRectNode;
         private SuperClumpMap superClumpMap;
         private Dictionary<Shape, Set<Shape>> originalAncestorSets;
-        private RectangleNode<Obstacle> allObstacleHierarchy;
+        private RectangleNode<Obstacle,Point> allObstacleHierarchy;
         
         internal TestContext TestContext { get; set; }
 
@@ -277,7 +277,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             return true;
         }
 
-        private VisibilityVertex FurthestVertexInDirection(VisibilityVertex start, Directions dir, bool wantOverlapped) 
+        private VisibilityVertex FurthestVertexInDirection(VisibilityVertex start, Direction dir, bool wantOverlapped) 
         {
             var furthest = start;
             for ( ; ; ) 
@@ -614,7 +614,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
                 }
             }
 
-            RectangleNodeUtils.CrossRectangleNodes<Obstacle>(this.allObstacleHierarchy, this.allObstacleHierarchy, VerifyIntersectingObstacleBoundingBoxes);
+            RectangleNodeUtils.CrossRectangleNodes<Obstacle,Point>(this.allObstacleHierarchy, this.allObstacleHierarchy, VerifyIntersectingObstacleBoundingBoxes);
 
             // Now verify all non-group spatial overlaps within a convex hull are part of that hull (we did groups already).
             foreach (var obstacleWithHull in this.allObstacleHierarchy.GetAllLeaves().Where(obs => obs.IsInConvexHull && obs.IsPrimaryObstacle && !obs.IsGroup)) 
@@ -1004,7 +1004,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             {
                 return;
             }
-            RectangleNodeUtils.CrossRectangleNodes<Obstacle>(groupHierarchy, this.allObstacleHierarchy, this.VerifyAndPopulateGroupSpatialChildren);
+            RectangleNodeUtils.CrossRectangleNodes<Obstacle,Point>(groupHierarchy, this.allObstacleHierarchy, this.VerifyAndPopulateGroupSpatialChildren);
         }
 
         private void CreateSuperClumpMap()
@@ -1014,7 +1014,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
 
         private void CreateClumpMap()
         {
-            this.clumpToRectNode = new Dictionary<Clump, RectangleNode<Obstacle>>();
+            this.clumpToRectNode = new Dictionary<Clump, RectangleNode<Obstacle,Point>>();
             foreach (var clumpee in this.ObstacleTree.GetAllObstacles().Where(obs => obs.IsOverlapped))
             {
                 this.clumpToRectNode[clumpee.Clump] = null;
@@ -1024,45 +1024,6 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             {
                 this.clumpToRectNode[clump] = ObstacleTree.CalculateHierarchy(clump);
             }
-        }
-
-        private static void VerifyPortEntries(EdgeGeometry edgeGeom, ObstaclePort sourceOport, ObstaclePort targetOport) 
-        {
-            VerifyPortEntry(edgeGeom.SourcePort.PortEntry, edgeGeom.Curve.Start, sourceOport);
-            VerifyPortEntry(edgeGeom.TargetPort.PortEntry, edgeGeom.Curve.End, targetOport);
-        }
-
-        private static void VerifyPortEntry(IPortEntry portEntry, Point endpoint, ObstaclePort oport) 
-        {
-            if (portEntry == null) 
-            {
-                return;
-            }
-            Validate.IsNotNull(oport, "portEntry must have an ObstaclePort");
-            var peoc = (PortEntryOnCurve)portEntry; // at this time we have no other IPortEntry implementations
-            var endpointParam = oport.PortCurve.ClosestParameter(endpoint);
-            foreach (var span in peoc.Spans) 
-            {
-                if (span.Item1 < span.Item2)
-                {
-                    if ((endpointParam >= span.Item1) && (endpointParam <= span.Item2))
-                    {
-                        return;
-                    }
-                    continue;
-                }
-                
-                // The span wraps around from end to start
-                if ((endpointParam >= span.Item1) && (endpointParam <= oport.PortCurve.ParEnd))
-                {
-                    return;
-                }
-                if ((endpointParam >= oport.PortCurve.ParStart) && (endpointParam <= span.Item2))
-                {
-                    return;
-                }
-            }
-            Validate.Fail("Path endpoint is not in a PortEntry span");
         }
 
         internal void VerifyPaths()
@@ -1089,8 +1050,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
                 var sourceObstacle = (null == sourceOport) ? null : sourceOport.Obstacle;
                 var targetObstacle = (null == targetOport) ? null : targetOport.Obstacle;
 
-                VerifyPortEntries(edgeGeom, sourceOport, targetOport);
-
+                
                 Validate.IsNotNull(edgeGeom.Curve, string.Format("Null path result between: {0}", GetSourceAndTargetString(edgeGeom, sourceObstacle, targetObstacle)));
                 foreach (var crossedObstacle in ObstaclesCrossedByPath(edgeGeom)) 
                 {
@@ -1151,7 +1111,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             // See if obstacles form a roadblock.  First try simple clumps...
             if (crossedObstacle.Clump != null)
             {
-                var crossedClumpRect = this.clumpToRectNode[crossedObstacle.Clump].Rectangle;
+                Rectangle crossedClumpRect = (Rectangle)this.clumpToRectNode[crossedObstacle.Clump].Rectangle;
                 if (this.CheckDirectRouteAcrossGroupThroughClumpRect(edgeGeom, routeAsTheCrowFlies, crossedClumpRect)) 
                 {
                     return true;

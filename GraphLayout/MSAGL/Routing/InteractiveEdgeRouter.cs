@@ -62,7 +62,7 @@ namespace Microsoft.Msagl.Routing {
             set { targetLoosePolyline = value; }
         }
 
-        //RectangleNode<Polyline> RootOfTightHierarchy {
+        //RectangleNode<Polyline, Point> RootOfTightHierarchy {
         //    get { return this.obstacleCalculator.RootOfTightHierararchy; }
         //}
 
@@ -449,12 +449,12 @@ namespace Microsoft.Msagl.Routing {
             return PolylineIntersectsPolyRectangleNodeOfTightHierarchy(a, b, ObstacleCalculator.RootOfTightHierarchy);
         }
 
-        bool PolylineIntersectsPolyRectangleNodeOfTightHierarchy(Point a, Point b, RectangleNode<Polyline> rect) {
+        bool PolylineIntersectsPolyRectangleNodeOfTightHierarchy(Point a, Point b, RectangleNode<Polyline, Point> rect) {
             return PolylineIntersectsPolyRectangleNodeOfTightHierarchy(new LineSegment(a, b), rect);
         }
 
-        bool PolylineIntersectsPolyRectangleNodeOfTightHierarchy(LineSegment ls, RectangleNode<Polyline> rect) {
-            if (!ls.BoundingBox.Intersects(rect.Rectangle))
+        bool PolylineIntersectsPolyRectangleNodeOfTightHierarchy(LineSegment ls, RectangleNode<Polyline, Point> rect) {
+            if (!ls.BoundingBox.Intersects((Rectangle)rect.Rectangle))
                 return false;
             if (rect.UserData != null) {
                 foreach (IntersectionInfo ii in Curve.GetAllIntersections(ls, rect.UserData, false)) {
@@ -472,19 +472,23 @@ namespace Microsoft.Msagl.Routing {
         }
 
         internal static List<IntersectionInfo> IntersectionsOfLineAndRectangleNodeOverPolyline(LineSegment ls,
-                                                                                               RectangleNode<Polyline>
+                                                                                               RectangleNode<Polyline, Point>
                                                                                                    rectNode) {
             var ret = new List<IntersectionInfo>();
             IntersectionsOfLineAndRectangleNodeOverPolyline(ls, rectNode, ret);
             return ret;
         }
 
-        static void IntersectionsOfLineAndRectangleNodeOverPolyline(LineSegment ls, RectangleNode<Polyline> rectNode,
+        static void IntersectionsOfLineAndRectangleNodeOverPolyline(LineSegment ls, RectangleNode<Polyline, Point> rectNode,
                                                                     List<IntersectionInfo> listOfIntersections) {
-            if (rectNode == null)
+            if (rectNode == null) {
                 return;
-            if (!ls.BoundingBox.Intersects(rectNode.Rectangle))
+            }
+
+            if (!ls.BoundingBox.Intersects((Rectangle)rectNode.Rectangle)) {
                 return;
+            }
+
             if (rectNode.UserData != null) {
                 listOfIntersections.AddRange(Curve.GetAllIntersections(ls, rectNode.UserData, true));
                 return;
@@ -842,12 +846,12 @@ namespace Microsoft.Msagl.Routing {
         ///</summary>
         public double ConeSpannerAngle { get; set; }
 
-        internal RectangleNode<Polyline> TightHierarchy {
+        internal RectangleNode<Polyline, Point> TightHierarchy {
             get { return ObstacleCalculator.RootOfTightHierarchy; }
             set { ObstacleCalculator.RootOfTightHierarchy = value; }
         }
 
-        internal RectangleNode<Polyline> LooseHierarchy {
+        internal RectangleNode<Polyline, Point> LooseHierarchy {
             get { return ObstacleCalculator.RootOfLooseHierarchy; }
             set { ObstacleCalculator.RootOfLooseHierarchy = value; }
         }
@@ -1402,12 +1406,12 @@ namespace Microsoft.Msagl.Routing {
             return GetFirstHitPolyline(point, ObstacleCalculator.RootOfLooseHierarchy);
         }
 
-        internal static Polyline GetFirstHitPolyline(Point point, RectangleNode<Polyline> rectangleNode) {
-            RectangleNode<Polyline> rectNode = GetFirstHitRectangleNode(point, rectangleNode);
+        internal static Polyline GetFirstHitPolyline(Point point, RectangleNode<Polyline, Point> rectangleNode) {
+            RectangleNode<Polyline, Point> rectNode = GetFirstHitRectangleNode(point, rectangleNode);
             return rectNode != null ? rectNode.UserData : null;
         }
 
-        static RectangleNode<Polyline> GetFirstHitRectangleNode(Point point, RectangleNode<Polyline> rectangleNode) {
+        static RectangleNode<Polyline, Point> GetFirstHitRectangleNode(Point point, RectangleNode<Polyline, Point> rectangleNode) {
             if (rectangleNode == null)
                 return null;
             return rectangleNode.FirstHitNode(point,
